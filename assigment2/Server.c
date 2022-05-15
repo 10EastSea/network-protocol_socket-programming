@@ -17,6 +17,8 @@ int clnt_socks[2];
 char win_msg[BUF_SIZE] = "당신이 이겼습니다\n";
 char lose_msg[BUF_SIZE] = "당신은 졌습니다\n";
 
+int gaming = 1;
+
 int main(int argc, char* argv[]) {
     int serv_sock, clnt_sock;
     struct sockaddr_in serv_adr, clnt_adr;
@@ -59,7 +61,7 @@ int main(int argc, char* argv[]) {
     while(1) {
         int number = recv_number(0); // 1번째 플레이어에게 숫자 받음
         send_number(number, 1); // 2번째 플레이어에게 숫자 전송
-        if(number == 0) { // 빙고! -> 1번째 플레이어 승
+        if(gaming == 0) { // 빙고! -> 1번째 플레이어 승
             printf("1번째 플레이어 빙고!\n");
             write(clnt_socks[0], &win_msg, BUF_SIZE);
             write(clnt_socks[1], &lose_msg, BUF_SIZE);
@@ -68,7 +70,7 @@ int main(int argc, char* argv[]) {
 
         number = recv_number(1); // 2번째 플레이어에게 숫자 받음
         send_number(number, 0); // 1번째 플레이어에게 숫자 전송
-        if(number == 0) { // 빙고! -> 2번째 플레이어 승
+        if(gaming == 0) { // 빙고! -> 2번째 플레이어 승
             printf("2번째 플레이어 빙고!\n");
             write(clnt_socks[1], &win_msg, BUF_SIZE);
             write(clnt_socks[0], &lose_msg, BUF_SIZE);
@@ -94,10 +96,18 @@ int recv_number(int clnt) {
     read(clnt_socks[clnt], (char*)&number, sizeof(int));
     read(clnt_socks[clnt], (char*)&bingo_cnt, sizeof(int));
 
-    if(clnt == 0) printf("1번째 플레이어: Call %2d / 현재 빙고 갯수 = %d개\n", number, bingo_cnt);
-    else if(clnt == 1) printf("2번째 플레이어: Call %2d / 현재 빙고 갯수 = %d개\n", number, bingo_cnt);
+    gaming = 1;
+    if(bingo_cnt >= 3) gaming = 0;
 
-    if(bingo_cnt >= 3) number = 0;
+    if(clnt == 0) {
+        printf("1번째 플레이어: Call %2d / 현재 빙고 갯수 = %d개\n", number, bingo_cnt);
+        write(clnt_socks[1], (char*)&gaming, sizeof(int));
+    }
+    else if(clnt == 1) {
+        printf("2번째 플레이어: Call %2d / 현재 빙고 갯수 = %d개\n", number, bingo_cnt);
+        write(clnt_socks[0], (char*)&gaming, sizeof(int));
+    }
+
     return number;
 }
 void send_status_all(int status) {

@@ -76,11 +76,13 @@ int main(int argc, char* argv[]) {
         }
         else if(status == 0) {
             printf("\n상대방 응답 대기 중...\n");
+            int gaming = 0;
+            read(sock, &gaming, sizeof(int));
             read(sock, &number, sizeof(int));
-            if(number == 0) break; // 상대방이 이겼을 때
 
             printf("상대방이 부른 숫자: %d\n", number);
             update_bingo(number);
+            if(gaming == 0) break; // 상대방이 이겼을 때
 
             status = 1;
         }
@@ -105,6 +107,7 @@ void error_handling(char* msg) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
 int create_bingo() {
     printf("\n5X5 빙고판을 작성해주세요\n");
     printf("1~25까지의 숫자를 띄어쓰기로 구분하여, 한 줄로 25개의 숫자를 입력하면 됩니다\n");
