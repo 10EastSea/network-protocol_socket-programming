@@ -76,14 +76,13 @@ int main(int argc, char* argv[]) {
         }
         else if(status == 0) {
             printf("\n상대방 응답 대기 중...\n");
-            int gaming = 0;
-            read(sock, &gaming, sizeof(int));
             read(sock, &number, sizeof(int));
+            read(sock, &status, sizeof(int));
 
             printf("상대방이 부른 숫자: %d\n", number);
             update_bingo(number);
-            if(gaming == 0) break; // 상대방이 이겼을 때
-
+            
+            if(status == 0) break; // 상대방이 이겼을 때
             status = 1;
         }
 
