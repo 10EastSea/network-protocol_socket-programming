@@ -21,7 +21,7 @@ char lose_msg[BUF_SIZE] = "당신은 졌습니다\n";
 int main(int argc, char* argv[]) {
     int serv_sock, clnt_sock;
     struct sockaddr_in serv_adr, clnt_adr;
-    socklen_t clnt_adr_sz; // int clnt_adr_sz;
+    socklen_t clnt_adr_sz;
 
     if(argc != 2) {
         printf("Usage: %s <PORT>\n", argv[0]);

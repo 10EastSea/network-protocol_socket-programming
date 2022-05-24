@@ -25,8 +25,6 @@ int main(int argc, char* argv[]) {
 
     int sock;
     struct sockaddr_in serv_addr;
-    void *thread_return;
-
     int status = 0;
 
     if(argc != 3) {
