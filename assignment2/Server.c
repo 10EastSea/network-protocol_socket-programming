@@ -13,10 +13,12 @@ void send_status_all(int status);
 void send_status_each_other(int status1, int status2);
 
 int gaming_handler(int clnt);
+void finish_handler(int status);
 
 int clnt_socks[2];
 char win_msg[BUF_SIZE] = "당신이 이겼습니다\n";
 char lose_msg[BUF_SIZE] = "당신은 졌습니다\n";
+char draw_msg[BUF_SIZE] = "무승부 입니다\n";
 
 int main(int argc, char* argv[]) {
     int serv_sock, clnt_sock;
@@ -59,19 +61,12 @@ int main(int argc, char* argv[]) {
     send_status_each_other(1, 0); // 빙고 시작 -> 먼저 접속한 플레이어에게 선두권
     while(1) {
         status = gaming_handler(0); // 1번째 플레이어에게 숫자 받고, 2번째 플레이어에게 숫자 전송
-        if(status == 0) { // 빙고! -> 1번째 플레이어 승
-            printf("1번째 플레이어 빙고!\n");
-            write(clnt_socks[0], &win_msg, BUF_SIZE);
-            write(clnt_socks[1], &lose_msg, BUF_SIZE);
-            break;
-        }
+        finish_handler(status);
+        if(status != 0) break;
+
         status = gaming_handler(1); // 2번째 플레이어에게 숫자 받고, 1번째 플레이어에게 숫자 전송
-        if(status == 0) { // 빙고! -> 2번째 플레이어 승
-            printf("2번째 플레이어 빙고!\n");
-            write(clnt_socks[1], &win_msg, BUF_SIZE);
-            write(clnt_socks[0], &lose_msg, BUF_SIZE);
-            break;
-        }
+        finish_handler(status);
+        if(status != 0) break;
     }
 
     close(clnt_socks[0]);
@@ -100,21 +95,54 @@ int gaming_handler(int clnt) {
     read(clnt_socks[clnt], (char*)&number, sizeof(int));
     read(clnt_socks[clnt], (char*)&bingo_cnt, sizeof(int));
 
-    int status = 1;
-    if(bingo_cnt >= 3) status = 0;
+    int status = 0; // 0: 게임중, 1: 1번째 플레이어 승, 2: 2번째 플레이어 승, 3: 무승부
+    if(bingo_cnt >= 3) {
+        if(clnt == 0) status = 1;
+        else if(clnt == 1) status = 2;
+    }
 
     if(clnt == 0) {
         printf("1번째 플레이어: Call %2d / 현재 빙고 갯수 = %d개\n", number, bingo_cnt);
         write(clnt_socks[1], (char*)&number, sizeof(int));
-        write(clnt_socks[1], (char*)&status, sizeof(int));
+        
+        read(clnt_socks[1], (char*)&bingo_cnt, sizeof(int));
+        if(bingo_cnt >= 3) { // 2번째 플레이어도 빙고 3개 완성
+            if(status == 0) status = 2;
+            else if(status == 1) status = 3; // 무승부
+        }
+        printf("2번째 플레이어: Recv %2d / 현재 빙고 갯수 = %d개\n", number, bingo_cnt);
     }
     else if(clnt == 1) {
         printf("2번째 플레이어: Call %2d / 현재 빙고 갯수 = %d개\n", number, bingo_cnt);
         write(clnt_socks[0], (char*)&number, sizeof(int));
-        write(clnt_socks[0], (char*)&status, sizeof(int));
+
+        read(clnt_socks[0], (char*)&bingo_cnt, sizeof(int));
+        if(bingo_cnt >= 3) { // 1번째 플레이어도 빙고 3개 완성
+            if(status == 0) status = 1;
+            else if(status == 2) status = 3; // 무승부
+        }
+        printf("1번째 플레이어: Recv %2d / 현재 빙고 갯수 = %d개\n", number, bingo_cnt);
     }
 
+    write(clnt_socks[0], (char*)&status, sizeof(int));
+    write(clnt_socks[1], (char*)&status, sizeof(int));
     return status;
+}
+
+void finish_handler(int status) {
+    if(status == 1) { // 빙고! -> 1번째 플레이어 승
+        printf("1번째 플레이어 빙고!\n");
+        write(clnt_socks[0], &win_msg, BUF_SIZE);
+        write(clnt_socks[1], &lose_msg, BUF_SIZE);
+    } else if(status == 2) { // 빙고! -> 2번째 플레이어 승
+        printf("2번째 플레이어 빙고!\n");
+        write(clnt_socks[1], &win_msg, BUF_SIZE);
+        write(clnt_socks[0], &lose_msg, BUF_SIZE);
+    } else if(status == 3) { // 빙고! -> 무승부
+        printf("1번재, 2번째 플레이어 빙고!\n");
+        write(clnt_socks[0], &draw_msg, BUF_SIZE);
+        write(clnt_socks[1], &draw_msg, BUF_SIZE);
+    }
 }
 
 void error_handling(char* msg) {

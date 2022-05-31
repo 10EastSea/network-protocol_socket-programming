@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
     int sock;
     struct sockaddr_in serv_addr;
-    int status = 0;
+    int status = 0, finish = 0;
 
     if(argc != 3) {
         printf("Usage : %s <IP> <PORT>\n", argv[0]);
@@ -75,16 +75,16 @@ int main(int argc, char* argv[]) {
         else if(status == 0) {
             printf("\n상대방 응답 대기 중...\n");
             read(sock, &number, sizeof(int));
-            read(sock, &status, sizeof(int));
 
             printf("상대방이 부른 숫자: %d\n", number);
             update_bingo(number);
-            
-            if(status == 0) break; // 상대방이 이겼을 때
+
+            write(sock, (char*)&bingo_cnt, sizeof(int));
             status = 1;
         }
 
-        if(bingo_cnt >= 3) break; // 내가 이겼을 때
+        read(sock, &finish, sizeof(int)); // 0: 게임중, 1: 1번째 플레이어 승, 2: 2번째 플레이어 승, 3: 무승부
+        if(finish != 0) break;
     }
     printf("==========  END  ==========\n");
     printf("\n최종 빙고판\n");
